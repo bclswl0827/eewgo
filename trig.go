@@ -135,7 +135,6 @@ func ZDetect(a []float64, nsta int) []float64 {
 	// Standard Sta shifted by 1
 	sta := numpyCumsumFloat(a, func(f float64) float64 { return math.Pow(f, 2) })
 
-	// sta[nsta+1:] = sta[nsta:-1] - sta[:-nsta-1]
 	tempArr1 := make([]float64, len(sta)-nsta-1)
 	copy(tempArr1, sta[:len(sta)-nsta-1])
 	tempArr2 := make([]float64, len(sta)-nsta-1)

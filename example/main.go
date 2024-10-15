@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	staWindow = 1000
-	ltaWindow = 10000
-	trigOn    = 1.5
+	staWindow = 0.5
+	ltaWindow = 30
+	trigOn    = 8.0
 	trigOff   = 0.5
 )
 
@@ -36,7 +36,7 @@ func main() {
 	}
 	log.Println("Successfully generate trace data")
 
-	staLta := eewgo.CarlStaTrig(trData, staWindow, ltaWindow, 1, 1)
+	staLta := eewgo.RecursiveStaLta(trData, int(staWindow*sampleRate), int(ltaWindow*sampleRate))
 	log.Println("Get STA/LTA successfully")
 
 	onsets := eewgo.TriggerOnset(staLta, trigOn, trigOff, math.MaxInt64, false)
