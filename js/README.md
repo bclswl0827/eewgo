@@ -2,6 +2,8 @@
 
 You can compile OregonDSP to JavaScript from source code on Linux, macOS, or Windows. The following steps are based on Debian Linux (Debian GNU/Linux 11 (bullseye)), but should work on other OS as well.
 
+*Thanks to [@crotwell](https://github.com/crotwell) for creating [OregonDSP-kotlin](https://github.com/crotwell/OregonDSP-kotlin)!*
+
 ### Prerequisites
 
 - Git
