@@ -36,7 +36,11 @@ func main() {
 	}
 	log.Println("Successfully generate trace data")
 
-	staLta := eewgo.RecursiveStaLta(trData, int(staWindow*sampleRate), int(ltaWindow*sampleRate))
+	ftr := eewgo.NewFilter(eewgo.UseBandPassFilter(0.5, 10, sampleRate, 101))
+	filteredArr := ftr.Apply(trData)
+	log.Println("filtered trace data")
+
+	staLta := eewgo.RecursiveStaLta(filteredArr, int(staWindow*sampleRate), int(ltaWindow*sampleRate))
 	log.Println("Get STA/LTA successfully")
 
 	onsets := eewgo.TriggerOnset(staLta, trigOn, trigOff, math.MaxInt64, false)
