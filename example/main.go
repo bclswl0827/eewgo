@@ -36,7 +36,7 @@ func main() {
 	}
 	log.Println("Successfully generate trace data")
 
-	ftr := eewgo.NewFilter(eewgo.UseBandPassFilter(0.5, 10, sampleRate, 101))
+	ftr, _ := eewgo.NewBandPassFIRFilter(0.5, 10, sampleRate, 101)
 	filteredArr := ftr.Apply(trData)
 	log.Println("filtered trace data")
 

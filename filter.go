@@ -2,13 +2,6 @@ package eewgo
 
 import "math"
 
-func NewFilter(kernel []float64) *FIRFilter {
-	return &FIRFilter{
-		kernel: kernel,
-		state:  make([]float64, len(kernel)-1),
-	}
-}
-
 func (f *FIRFilter) Apply(input []float64) []float64 {
 	numTaps := len(f.kernel)
 	extendedInput := append(f.state, input...)
@@ -24,46 +17,74 @@ func (f *FIRFilter) Apply(input []float64) []float64 {
 	return output
 }
 
-func UseLowPassFilter(cutoffFreq, sampleRate float64, numTaps int) []float64 {
-	normalizedCutoff := 2 * math.Pi * cutoffFreq / sampleRate
+func NewLowPassFIRFilter(cutoffFreq, sampleRate float64, numTaps int) (*FIRFilter, []float64) {
+	normalizedCutoff := cutoffFreq / sampleRate
 	coeffs := make([]float64, numTaps)
 
+	center := numTaps / 2
 	for i := 0; i < numTaps; i++ {
-		if i == numTaps/2 {
-			coeffs[i] = normalizedCutoff / math.Pi
+		n := float64(i - center)
+		if i == center {
+			coeffs[i] = 2 * normalizedCutoff
 		} else {
-			coeffs[i] = math.Sin(normalizedCutoff*float64(i-numTaps/2)) / (math.Pi * float64(i-numTaps/2))
+			coeffs[i] = math.Sin(2*math.Pi*normalizedCutoff*n) / (math.Pi * n)
 		}
+
+		// Hamming window
+		coeffs[i] *= 0.54 - 0.46*math.Cos(2*math.Pi*float64(i)/float64(numTaps-1))
 	}
 
-	window := make([]float64, numTaps)
-	for i := 0; i < numTaps; i++ {
-		window[i] = 0.54 - 0.46*math.Cos(2*math.Pi*float64(i)/float64(numTaps-1))
-		coeffs[i] *= window[i]
+	// Normalize gain
+	var sum float64
+	for _, c := range coeffs {
+		sum += c
+	}
+	for i := range coeffs {
+		coeffs[i] /= sum
 	}
 
-	return coeffs
+	return &FIRFilter{
+		kernel: coeffs,
+		state:  make([]float64, numTaps-1),
+	}, coeffs
 }
 
-func UseHighPassFilter(cutoffFreq, sampleRate float64, numTaps int) []float64 {
-	lowPassCoeffs := UseLowPassFilter(cutoffFreq, sampleRate, numTaps)
-	highPassCoeffs := make([]float64, numTaps)
+func NewBandPassFIRFilter(lowCutoffFreq, highCutoffFreq, sampleRate float64, numTaps int) (*FIRFilter, []float64) {
+	low := 2 * math.Pi * lowCutoffFreq / sampleRate
+	high := 2 * math.Pi * highCutoffFreq / sampleRate
+
+	coeffs := make([]float64, numTaps)
+	center := numTaps / 2
+
+	for i := 0; i < numTaps; i++ {
+		n := float64(i - center)
+		if i == center {
+			coeffs[i] = (high - low) / math.Pi
+		} else {
+			coeffs[i] = (math.Sin(high*n) - math.Sin(low*n)) / (math.Pi * n)
+		}
+		coeffs[i] *= 0.54 - 0.46*math.Cos(2*math.Pi*float64(i)/float64(numTaps-1))
+	}
+
+	return &FIRFilter{
+		kernel: coeffs,
+		state:  make([]float64, numTaps-1),
+	}, coeffs
+}
+
+func NewHighPassFIRFilter(cutoffFreq, sampleRate float64, numTaps int) (*FIRFilter, []float64) {
+	_, lowPassCoeffs := NewLowPassFIRFilter(cutoffFreq, sampleRate, numTaps)
+	coeffs := make([]float64, numTaps)
 	for i := range lowPassCoeffs {
 		if i == numTaps/2 {
-			highPassCoeffs[i] = 1 - lowPassCoeffs[i]
+			coeffs[i] = 1 - lowPassCoeffs[i]
 		} else {
-			highPassCoeffs[i] = -lowPassCoeffs[i]
+			coeffs[i] = -lowPassCoeffs[i]
 		}
 	}
-	return highPassCoeffs
-}
 
-func UseBandPassFilter(lowCutoffFreq, highCutoffFreq, sampleRate float64, numTaps int) []float64 {
-	lowPassCoeffs := UseLowPassFilter(highCutoffFreq, sampleRate, numTaps)
-	highPassCoeffs := UseHighPassFilter(lowCutoffFreq, sampleRate, numTaps)
-	bandPassCoeffs := make([]float64, numTaps)
-	for i := range bandPassCoeffs {
-		bandPassCoeffs[i] = lowPassCoeffs[i] + highPassCoeffs[i]
-	}
-	return bandPassCoeffs
+	return &FIRFilter{
+		kernel: coeffs,
+		state:  make([]float64, numTaps-1),
+	}, coeffs
 }
